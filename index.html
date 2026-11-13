@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fight Week">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#111417">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Fight Strength Week</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: phone-first gym companion. Week strip on top, then today's session as an ordered run of steps you tick off, rest timer pinned to the bottom. */
+:root{
+  --bg:#eef0ec; --surface:#ffffff; --fg:#15191d; --muted:#5c6670; --line:#d6dad3;
+  --accent:#2a55c4; --accent-ink:#ffffff; --mma:#b5651d; --mma-soft:#f5e6d6; --done:#2f8a57; --done-soft:#dcefe3;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111417; --surface:#1a1f24; --fg:#e8ebee; --muted:#9aa4ad; --line:#2b323a;
+  --accent:#6f95ff; --accent-ink:#0d1220; --mma:#e39a57; --mma-soft:#33261a; --done:#5cc08a; --done-soft:#183025; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111417; --surface:#1a1f24; --fg:#e8ebee; --muted:#9aa4ad; --line:#2b323a;
+  --accent:#6f95ff; --accent-ink:#0d1220; --mma:#e39a57; --mma-soft:#33261a; --done:#5cc08a; --done-soft:#183025; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 120px}
+.wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:.01em}
+h1{font-size:34px;font-weight:800;text-transform:uppercase;line-height:1}
+.sub{color:var(--muted);margin:4px 0 0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.day{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 2px;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+.day .d{font-family:var(--display);font-weight:700;font-size:17px;text-transform:uppercase}
+.day .t{font-size:10.5px;color:var(--muted);text-align:center;line-height:1.15}
+.day.mma{background:var(--mma-soft);border-color:transparent}
+.day.mma .t{color:var(--mma);font-weight:600}
+.day.gym .t{color:var(--accent);font-weight:600}
+.day.sel{outline:2px solid var(--fg);outline-offset:1px}
+.day.today .d::after{content:"";display:block;width:5px;height:5px;border-radius:50%;background:var(--accent);margin:2px auto 0}
+
+.block{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.block select{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.phase{font-weight:600;color:var(--fg)}
+
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.head h2{font-size:28px;font-weight:800;text-transform:uppercase;line-height:1}
+.head .meta{color:var(--muted);font-size:13px}
+.progress{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--done);transition:width .3s}
+
+.steps{display:flex;flex-direction:column;gap:10px;list-style:none;margin:0;padding:0}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.step.complete{border-color:var(--done);background:linear-gradient(var(--done-soft),var(--done-soft)) top/100% 4px no-repeat,var(--surface)}
+.tag{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ex{display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px dashed var(--line)}
+.ex:first-of-type{border-top:0;padding-top:0}
+.exrow{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.exname{font-weight:600;font-size:16px}
+.rx{font-family:var(--display);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tip{font-size:13px;color:var(--muted);margin:0}
+.sets{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.set{width:42px;height:42px;border-radius:50%;border:2px solid var(--line);background:transparent;font-family:var(--display);font-weight:700;font-size:17px;display:grid;place-items:center}
+.set[aria-pressed="true"]{background:var(--done);border-color:var(--done);color:var(--surface)}
+.kg{display:flex;align-items:center;gap:6px;margin-left:auto;font-size:13px;color:var(--muted)}
+.kg input{width:72px;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 8px;text-align:right;font-variant-numeric:tabular-nums}
+.superset{font-size:12px;color:var(--accent);font-weight:600}
+
+.rest{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:6px}
+.rest h2{font-size:24px;text-transform:uppercase}
+
+.rules{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px 14px}
+.rules summary{cursor:pointer;padding:10px 0;font-weight:600}
+.rules ul{margin:0 0 12px;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.ghost{border:1px solid var(--line);background:transparent;border-radius:8px;padding:8px 12px;font-size:13px;color:var(--muted)}
+
+.timer{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);
+  padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:5}
+.timer .in{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:10px}
+.clock{font-family:var(--display);font-weight:800;font-size:34px;font-variant-numeric:tabular-nums;min-width:86px}
+.clock.go{color:var(--done)}
+.tbtn{border:0;border-radius:10px;padding:11px 14px;background:var(--accent);color:var(--accent-ink);font-weight:600}
+.tbtn.alt{background:var(--bg);color:var(--fg);border:1px solid var(--line)}
+.tlabel{font-size:12px;color:var(--muted);margin-left:auto;text-align:right}
+@media (prefers-reduced-motion:reduce){.progress i{transition:none}}
+@media (max-width:420px){.day .t{font-size:9.5px}.clock{font-size:28px;min-width:72px}.tbtn{padding:10px 11px}}
+</style>
+<style>html{-webkit-text-size-adjust:100%}body{padding-top:calc(20px + env(safe-area-inset-top,0px))!important;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Fight Strength Week</h1>
+    <p class="sub">3 quick gym sessions around your MMA. Tap a day, work top to bottom, tick each set.</p>
+  </header>
+
+  <nav class="week" id="week" aria-label="Days of the week"></nav>
+
+  <div class="block">
+    <label for="wk">Block week</label>
+    <select id="wk"></select>
+    <span class="phase" id="phase"></span>
+  </div>
+
+  <section id="session" aria-live="polite"></section>
+
+  <details class="rules">
+    <summary>The 3 rules</summary>
+    <ul>
+      <li>Stop every heavy set with about 2 good reps left. Never grind to failure.</li>
+      <li>Move every rep as fast as you can with good form.</li>
+      <li>Add weight next week only if every set felt fast. If a set slowed down, keep the weight.</li>
+      <li>Do all sets of one exercise, then move to the next. Tick a set and the rest timer starts.</li>
+      <li>Short on time: do the warm-up and exercises 1 and 2 only (about 20 min).</li>
+      <li>Flat or sore at MMA: drop one set from every lift that week.</li>
+      <li>Busy gym: the order can change, so start with whatever is free. Just keep the jumps early, while you're fresh. No chalk at Basic-Fit, so bring lifting straps for deadlifts if your grip gives out.</li>
+    </ul>
+  </details>
+
+  <div class="actions">
+    <button class="ghost" id="resetDay" type="button">Clear ticks for this day</button>
+  </div>
+</div>
+
+<div class="timer" role="region" aria-label="Rest timer">
+  <div class="in">
+    <div class="clock" id="clock">1:30</div>
+    <button class="tbtn" id="t90" type="button">Rest 90s</button>
+    <button class="tbtn alt" id="t60" type="button">2 min</button>
+    <span class="tlabel" id="tlabel">Rest timer</span>
+  </div>
+</div>
+
+<script>
+const DAYS=[
+ {k:"mon",d:"Mon",type:"mma",label:"MMA"},
+ {k:"tue",d:"Tue",type:"gym",label:"Gym A"},
+ {k:"wed",d:"Wed",type:"gym",label:"Gym B"},
+ {k:"thu",d:"Thu",type:"mma",label:"MMA"},
+ {k:"fri",d:"Fri",type:"gym",label:"Gym C"},
+ {k:"sat",d:"Sat",type:"rest",label:"Rest"},
+ {k:"sun",d:"Sun",type:"mma",label:"Sparring"}
+];
+const WARM={tag:"Warm-up · 5 min",ex:[{n:"Jump rope or shadowbox, then leg swings, hip openers, arm circles",rx:"5 min",sets:1}]};
+const S={
+ tue:{title:"Tuesday · Legs",time:"~40 min",why:"Legs recover 48h before Thursday MMA.",steps:[WARM,
+  {tag:"1 · Explosive",rest:60,ex:[{n:"Broad jumps",rx:"4 × 3",sets:4,tip:"Jump forward as far as you can on the stretch mats, land soft and quiet. Box jumps instead if your club has plyo boxes free."}]},
+  {tag:"2 · Main lift",rest:120,ex:[{n:"Barbell deadlift",rx:"4 × 4",sets:4,kg:1,tip:"Stand up fast. Lower it under control, no dropping. Racks busy: heavy dumbbell Romanian deadlift 4 × 6."}]},
+  {tag:"3 · Strength",rest:90,ex:[{n:"Bulgarian split squat",rx:"3 × 6 /leg",sets:3,kg:1,tip:"Dumbbells, back foot on any bench. Drive up hard."}]},
+  {tag:"4 · Core",rest:60,ex:[{n:"Hanging leg raises",rx:"3 × 8",sets:3,tip:"On the pull-up rig or the leg-raise chair. Slow and controlled."}]},
+  {tag:"5 · Finisher",rest:30,ex:[{n:"Neck bridges",rx:"2 × 15",sets:2,tip:"On a mat. Light and controlled."}]}]},
+ wed:{title:"Wednesday · Upper body",time:"~40 min",why:"Different half from Tuesday, so back-to-back days don't clash.",steps:[WARM,
+  {tag:"1 · Explosive",rest:60,ex:[{n:"Explosive push-ups",rx:"4 × 4",sets:4,tip:"Push so hard your hands leave the floor. Clap once you can. No equipment, so a busy gym doesn't matter."}]},
+  {tag:"2 · Main lift",rest:120,ex:[{n:"Weighted pull-ups",rx:"4 × 5",sets:4,kg:1,tip:"Grip a dumbbell between your feet to add weight. Bodyweight is fine at first. Pull fast, lower slow."}]},
+  {tag:"3 · Main lift",rest:120,ex:[{n:"Weighted dips",rx:"4 × 5",sets:4,kg:1,tip:"Dip bars on the rig or the assisted dip machine. Dumbbell between your feet to add weight."}]},
+  {tag:"4 · Strength",rest:90,ex:[{n:"One-arm dumbbell push press",rx:"3 × 5 /arm",sets:3,kg:1,tip:"Small dip with the legs, then drive the dumbbell up fast, like a punch."}]},
+  {tag:"5 · Finisher",rest:60,ex:[{n:"Farmer's carry",rx:"2 × 30m",sets:2,kg:1,tip:"Heavy dumbbells, stand tall. No room to walk: hold them in place for 40s."}]}]},
+ fri:{title:"Friday · Fast and light",time:"~35 min",why:"Lighter and fast. Leave springy, fresh for Sunday sparring.",steps:[WARM,
+  {tag:"1 · Explosive",rest:60,ex:[{n:"Kettlebell swings",rx:"5 × 5",sets:5,kg:1,tip:"Kettlebells are in the functional zone. Snap the hips. All taken: swing one dumbbell held by the end."}]},
+  {tag:"2 · Explosive",rest:60,ex:[{n:"Jump squats",rx:"4 × 3",sets:4,tip:"Bodyweight, on a mat, land quietly. Stop if reps slow down."}]},
+  {tag:"3 · Calisthenics",rest:60,ex:[{n:"One-arm push-ups (hand on bench)",rx:"3 × 3 /side",sets:3,tip:"Lower the bench over the weeks."}]},
+  {tag:"4 · Calisthenics",rest:90,ex:[{n:"Chin-ups",rx:"3 × 5",sets:3,tip:"Explosive up."}]},
+  {tag:"5 · Finisher",rest:60,ex:[{n:"Turkish get-up",rx:"2 /side",sets:2,kg:1,tip:"Kettlebell or dumbbell, on a mat. Slow and controlled."}]}]}
+};
+const REST={
+ mon:["MMA training","Gym A tomorrow. Eat well and sleep."],
+ thu:["MMA training","Gym C tomorrow is light and fast."],
+ sun:["Sparring","Fresh from Saturday off. Nothing in the gym today."],
+ sat:["Rest day","A walk or easy mobility is fine. Save it for sparring."]
+};
+const PHASES=w=>w<=2?"Easy: leave 3–4 reps in the tank, learn the moves":w<=6?"Build: add a little weight when every set felt fast":"Deload: same exercises, half the sets";
+
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const todayIdx=(new Date().getDay()+6)%7;
+let sel=store.get("fsw-sel",DAYS[todayIdx].k);
+let week=store.get("fsw-week",1);
+let ticks=store.get("fsw-ticks",{});
+let kgs=store.get("fsw-kg",{});
+
+const wkSel=document.getElementById("wk");
+for(let i=1;i<=7;i++){const o=document.createElement("option");o.value=i;o.textContent="Week "+i;wkSel.appendChild(o)}
+wkSel.value=week;
+wkSel.onchange=()=>{week=+wkSel.value;store.set("fsw-week",week);renderPhase();renderSession()};
+function renderPhase(){document.getElementById("phase").textContent=PHASES(week)}
+
+function renderWeek(){
+ const w=document.getElementById("week");w.innerHTML="";
+ DAYS.forEach((d,i)=>{
+  const b=document.createElement("button");b.type="button";
+  b.className="day "+d.type+(d.k===sel?" sel":"")+(i===todayIdx?" today":"");
+  b.setAttribute("aria-pressed",d.k===sel);
+  b.innerHTML=`<span class="d">${d.d}</span><span class="t">${d.label}</span>`;
+  b.onclick=()=>{sel=d.k;store.set("fsw-sel",sel);renderWeek();renderSession()};
+  w.appendChild(b);
+ });
+}
+function setsFor(e){return week===7&&e.sets>1?Math.ceil(e.sets/2):e.sets}
+function rxFor(e){if(week!==7||e.sets<=1)return e.rx;return e.rx.replace(/^(\d+)/,m=>String(Math.ceil(+m/2)))}
+
+function renderSession(){
+ const el=document.getElementById("session");
+ const s=S[sel];
+ document.getElementById("resetDay").hidden=!s;
+ if(!s){const r=REST[sel];el.innerHTML=`<div class="rest"><span class="tag">${DAYS.find(d=>d.k===sel).d}</span><h2>${r[0]}</h2><p class="tip">${r[1]}</p></div>`;return}
+ const key=sel+"-w"+week;const t=ticks[key]||{};
+ let total=0,done=0;
+ let html=`<div class="head"><h2>${s.title}</h2><span class="meta">${s.time} · ${s.why}</span></div><div class="progress" aria-hidden="true"><i id="bar"></i></div><ol class="steps">`;
+ s.steps.forEach((st,si)=>{
+  let stTotal=0,stDone=0,inner="";
+  st.ex.forEach((e,ei)=>{
+   const n=setsFor(e);let bubbles="";
+   for(let j=0;j<n;j++){const id=`${si}-${ei}-${j}`;const on=!!t[id];stTotal++;if(on)stDone++;
+    bubbles+=`<button type="button" class="set" data-id="${id}" aria-pressed="${on}" aria-label="${e.n} set ${j+1}">${n===1?"✓":j+1}</button>`}
+   const kid=sel+"-"+si+"-"+ei;
+   const kg=e.kg?`<label class="kg" for="kg-${kid}">kg<input id="kg-${kid}" inputmode="decimal" data-kg="${kid}" value="${kgs[kid]??""}" placeholder="—"></label>`:"";
+   inner+=`<div class="ex">${st.ss?`<span class="superset">${String.fromCharCode(65+si-2)}${ei+1}</span>`:""}<div class="exrow"><span class="exname">${e.n}</span><span class="rx">${rxFor(e)}</span></div>${e.tip?`<p class="tip">${e.tip}</p>`:""}<div class="sets">${bubbles}${kg}</div></div>`;
+  });
+  total+=stTotal;done+=stDone;
+  html+=`<li class="step${stDone===stTotal?" complete":""}"><span class="tag">${st.tag}${st.rest?" · rest "+fmt(st.rest)+" between sets":""}</span>${inner}</li>`;
+ });
+ html+="</ol>";el.innerHTML=html;
+ document.getElementById("bar").style.width=(total?done/total*100:0)+"%";
+ el.querySelectorAll(".set").forEach(b=>b.onclick=()=>{
+  const k=sel+"-w"+week;ticks[k]=ticks[k]||{};ticks[k][b.dataset.id]=!ticks[k][b.dataset.id];store.set("fsw-ticks",ticks);
+  const wasOn=b.getAttribute("aria-pressed")==="true";
+  renderSession();
+  if(!wasOn&&b.closest(".step")&&b.dataset.id.split("-")[0]!=="0")startTimer(defaultRest(b.dataset.id));
+ });
+ el.querySelectorAll("[data-kg]").forEach(i=>i.oninput=()=>{kgs[i.dataset.kg]=i.value;store.set("fsw-kg",kgs)});
+}
+function defaultRest(id){const si=+id.split("-")[0];return S[sel].steps[si].rest||60}
+
+document.getElementById("resetDay").onclick=()=>{delete ticks[sel+"-w"+week];store.set("fsw-ticks",ticks);renderSession()};
+
+let tEnd=0,tInt=null;const clock=document.getElementById("clock"),tl=document.getElementById("tlabel");
+function fmt(s){return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
+function startTimer(sec){if(!sec)return;clearInterval(tInt);tEnd=Date.now()+sec*1000;clock.classList.remove("go");tl.textContent="Resting";tick();tInt=setInterval(tick,250)}
+function tick(){const left=Math.max(0,Math.ceil((tEnd-Date.now())/1000));clock.textContent=fmt(left);if(left===0){clearInterval(tInt);clock.classList.add("go");tl.textContent="Go: next set";try{navigator.vibrate&&navigator.vibrate(300)}catch(e){}}}
+document.getElementById("t90").onclick=()=>startTimer(90);
+document.getElementById("t60").onclick=()=>startTimer(120);
+
+renderPhase();renderWeek();renderSession();
+</script>
+<script>if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}</script>
+</body>
+</html>
